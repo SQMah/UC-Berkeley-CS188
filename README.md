@@ -1,3 +1,5 @@
-# python-template
- ![Build](https://github.com/SQMah/python-template/workflows/Build/badge.svg)
+# CS188
+ ![Build](https://github.com/SQMah/CS188/workflows/Build/badge.svg)
+ 
+ The repository for all CS188 projects.
  
