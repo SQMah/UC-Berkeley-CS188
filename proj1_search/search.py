@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -86,13 +86,44 @@ def depthFirstSearch(problem):
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    actions = []
+    closed = set()
+    fringe = util.Stack()
+    fringe.push(problem.getStartState())
+    return depthFirstSearchHelper(problem, closed, fringe, actions)
+
+def depthFirstSearchHelper(problem, closed, fringe, actions):
+    curr_state = fringe.pop()
+    if problem.isGoalState(curr_state):
+        return actions
+    if curr_state not in closed:
+        closed.add(curr_state)
+        for succ, action, stepCost in problem.getSuccessors(curr_state):
+            fringe.push(succ)
+            actions_new = actions.copy()
+            actions_new.append(action)
+            res = depthFirstSearchHelper(problem, closed, fringe, actions_new)
+            if res is not None:
+                return res
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    actions = []
+    closed = set()
+    fringe = util.Queue()
+    fringe.push((problem.getStartState(), []))
+    while fringe:
+        curr_state, action_state = fringe.pop()
+        closed.add(curr_state)
+        if problem.isGoalState(curr_state):
+            return action_state
+        for succ, action, stepCost in problem.getSuccessors(curr_state):
+            if succ not in closed:
+                closed.add(succ)
+                action_state_cp = action_state.copy()
+                action_state_cp.append(action)
+                fringe.push((succ, action_state_cp))
+
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
