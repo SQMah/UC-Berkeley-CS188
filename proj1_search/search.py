@@ -108,7 +108,6 @@ def depthFirstSearchHelper(problem, closed, fringe, actions):
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    actions = []
     closed = set()
     fringe = util.Queue()
     fringe.push((problem.getStartState(), []))
@@ -127,8 +126,20 @@ def breadthFirstSearch(problem):
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    closed = set()
+    fringe = util.PriorityQueueWithFunction(lambda x: x[0])
+    fringe.push((0, problem.getStartState(), []))
+    while fringe:
+        cost, curr_state, action_state = fringe.pop()
+        if problem.isGoalState(curr_state):
+            return action_state
+        if curr_state not in closed:
+            closed.add(curr_state)
+            for succ, action, stepCost in problem.getSuccessors(curr_state):
+                action_state_cp = action_state.copy()
+                action_state_cp.append(action)
+                fringe.push((cost + stepCost, succ, action_state_cp))
+
 
 def nullHeuristic(state, problem=None):
     """
