@@ -114,9 +114,9 @@ def breadthFirstSearch(problem):
     fringe.push((problem.getStartState(), []))
     while fringe:
         curr_state, action_state = fringe.pop()
-        closed.add(curr_state)
         if problem.isGoalState(curr_state):
             return action_state
+        closed.add(curr_state)
         for succ, action, stepCost in problem.getSuccessors(curr_state):
             if succ not in closed:
                 closed.add(succ)
