@@ -293,6 +293,7 @@ class CornersProblem(search.SearchProblem):
         Returns the start state (in your state space, not the full Pacman state
         space)
         """
+        #((x,y), boolean list of whether or not visited 4 corners)
         return (self.startingPosition, (False, False, False, False))
 
     def isGoalState(self, state):
@@ -367,9 +368,17 @@ def cornersHeuristic(state, problem):
     """
     # Start Hugh the heuristic here:
     corners = problem.corners # These are the corner coordinates
+    corners_l = list(corners)
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
-    print(walls)
-    return 0
+    # Find closest non-visited corner
+    min_corner = float("inf")
+    coord, visited_corners = state
+    for i, visited in enumerate(visited_corners):
+        if not visited:
+            hugh = util.manhattanDistance(coord, corners_l[i])
+            if hugh < min_corner:
+                min_corner = hugh
+    return min_corner
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
