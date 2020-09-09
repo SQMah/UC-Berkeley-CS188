@@ -368,8 +368,8 @@ def cornersHeuristic(state, problem):
     # Start Hugh the heuristic here:
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
-    coord, visited_corners = state
-    return min_order
+    print(walls)
+    return 0
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
