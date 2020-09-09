@@ -152,7 +152,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     closed = {}
     fringe = util.PriorityQueueWithFunction(lambda x: x[0])
-    fringe.push((0, problem.getStartState(), [], 0))
+    fringe.push((0, problem.getStartState(), [], 0)) #first 0: stepCost + heuristic
     while fringe:
         cost, curr_state, action_state, curr_cost = fringe.pop()
         if problem.isGoalState(curr_state):
