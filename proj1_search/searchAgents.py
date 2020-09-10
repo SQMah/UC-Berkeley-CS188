@@ -369,22 +369,22 @@ def cornersHeuristic(state, problem):
 
     """
     Say hi to His Royal Highness Hugh
-    Hugh takes
+    Hugh stores all the corners that still needs to be visited in to_visit.
+    While there are corners to visit, Hugh looks for the corner that is closest to
+    the current coordinate, then adds that to sum_dist. Then, the current coordinate
+    is updated to that corner that is found.
     """
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
-    coord, visited_corners = state
-    x, y = coord
-    curr_coord = [x, y]
-    dist_priority = util.PriorityQueueWithFunction(lambda x: util.manhattanDistance(x[0], tuple(x[1])))
-    for i, corner in enumerate(corners): # push unvisited corners to pq
-        if not visited_corners[i] and tuple(curr_coord) not in corners:
-            dist_priority.push((corner, curr_coord))
+    curr_coord, visited_corners = state
+    visited_corners = visited_corners
     sum_dist = 0
-    while not dist_priority.isEmpty():
-        min_corner, _ = dist_priority.pop()
-        sum_dist += util.manhattanDistance(tuple(curr_coord), min_corner)
-        curr_coord[0], curr_coord[1] = min_corner
+    to_visit = {corner for i, corner in enumerate(corners) if not visited_corners[i]}
+    while to_visit:
+        min_corner = min(to_visit, key=lambda x: util.manhattanDistance(curr_coord, x))
+        sum_dist += util.manhattanDistance(curr_coord, min_corner)
+        curr_coord = min_corner
+        to_visit.remove(curr_coord)
     return sum_dist
 
 class AStarCornersAgent(SearchAgent):
