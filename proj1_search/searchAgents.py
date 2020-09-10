@@ -477,11 +477,20 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access
     problem.heuristicInfo['wallCount']
     """
+    position, foodGrid = state
+    food_coords = set(foodGrid.asList())
     """
-    This is a brute force method, checks through all permutations, Hugh gets tired real quick.
+    This is a brute force method, checks through all permutations,
+    Hugh gets tired real quick without memoization.
+    """
     if not food_coords:
         return 0
-    sum_dist = float("inf")
+    min_dist = float("inf")
+    memo = dict()
+    def order_helper(order, start, end):
+        if start == end:
+            return 0
+
     import itertools
     for order in itertools.permutations(food_coords):
         curr_coord = position
@@ -489,19 +498,21 @@ def foodHeuristic(state, problem):
         for coord in order:
             dist += util.manhattanDistance(curr_coord, coord)
             curr_coord = coord
-            if dist > sum_dist:
+            if dist > min_dist:
                 break
-        if dist < sum_dist:
-            sum_dist = dist
+        if dist < min_dist:
+            min_dist = dist
     """
     # WIP of new method that looks at the SEARCH DEPTH closest pieces of food for every piece of food it goes to.
     search_depth = 2
-    position, foodGrid = state
-    food_coords = foodGrid.asList()
-    food_priority = util.PriorityQueueWithFunction(lambda x: util.manhattanDistance(position, x),
+
+    food_priority = util.PriorityQueueWithFunction(lambda x: util.manhattanDistance(position, x))
     for coord in food_coords:
         food_priority.push(coord)
     min_dist = float("inf")
+    def search_helper(food_coords, depth, curr_pos):
+        food_coords = food_coords.copy()
+        food_priority = util.PriorityQueueWithFunction(lambda x: util.manhattanDistance(position, x))
     while not food_priority.isEmpty():
         starting_food = food_priority.pop()
         curr_pos = position
@@ -521,7 +532,8 @@ def foodHeuristic(state, problem):
         search_depth -= 1
     if min_dist != float("inf"):
         return min_dist
-    return 0
+    """
+    return min_dist
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
