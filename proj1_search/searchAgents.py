@@ -477,8 +477,50 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access
     problem.heuristicInfo['wallCount']
     """
+    """
+    This is a brute force method, checks through all permutations, Hugh gets tired real quick.
+    if not food_coords:
+        return 0
+    sum_dist = float("inf")
+    import itertools
+    for order in itertools.permutations(food_coords):
+        curr_coord = position
+        dist = 0
+        for coord in order:
+            dist += util.manhattanDistance(curr_coord, coord)
+            curr_coord = coord
+            if dist > sum_dist:
+                break
+        if dist < sum_dist:
+            sum_dist = dist
+    """
+    # WIP of new method that looks at the SEARCH DEPTH closest pieces of food for every piece of food it goes to.
+    search_depth = 2
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
+    food_coords = foodGrid.asList()
+    food_priority = util.PriorityQueueWithFunction(lambda x: util.manhattanDistance(position, x),
+    for coord in food_coords:
+        food_priority.push(coord)
+    min_dist = float("inf")
+    while not food_priority.isEmpty():
+        starting_food = food_priority.pop()
+        curr_pos = position
+        to_eat = set(food_coords)
+        to_eat.remove(starting_food)
+        dist = util.manhattanDistance(curr_pos, starting_food)
+        curr_pos = starting_food
+        while to_eat:
+            if dist > min_dist:
+                break
+            next_food = min(to_eat, key=lambda x: util.manhattanDistance(curr_pos, x))
+            dist += util.manhattanDistance(curr_pos, next_food)
+            curr_pos = next_food
+            to_eat.remove(next_food)
+        if dist < min_dist:
+            min_dist = dist
+        search_depth -= 1
+    if min_dist != float("inf"):
+        return min_dist
     return 0
 
 class ClosestDotSearchAgent(SearchAgent):
