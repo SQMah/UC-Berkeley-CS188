@@ -478,29 +478,34 @@ def foodHeuristic(state, problem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    food_coords = set(foodGrid.asList())
+    food_coords = foodGrid.asList()
     """
     This is a brute force method, checks through all permutations,
     Hugh gets tired real quick without memoization.
     """
+    print(position, food_coords)
     if not food_coords:
         return 0
     min_dist = float("inf")
-    memo = dict()
-    def order_helper(order, start, end):
+    memo = problem.heuristicInfo
+    def order_helper(order, start, end, curr_coord, so_far):
+        if so_far > min_dist:
+            return None
         if start == end:
-            return 0
-
+            return so_far
+        else:
+            food_to_eat = order[start:end]
+            if (curr_coord, food_to_eat) in memo:
+                return memo[(curr_coord, food_to_eat)]
+            else:
+                next_food = order[start]
+                next_dist = order_helper(order, start + 1, end, next_food, so_far + util.manhattanDistance(curr_coord, next_food))
+                memo[(curr_coord, food_to_eat)] = next_dist
+                return memo[(curr_coord, food_to_eat)]
     import itertools
     for order in itertools.permutations(food_coords):
-        curr_coord = position
-        dist = 0
-        for coord in order:
-            dist += util.manhattanDistance(curr_coord, coord)
-            curr_coord = coord
-            if dist > min_dist:
-                break
-        if dist < min_dist:
+        dist = order_helper(order, 0, len(order), position, 0)
+        if dist is not None and dist < min_dist:
             min_dist = dist
     """
     # WIP of new method that looks at the SEARCH DEPTH closest pieces of food for every piece of food it goes to.
@@ -562,9 +567,13 @@ class ClosestDotSearchAgent(SearchAgent):
         food = gameState.getFood()
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
-
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        min_food, min_dist = None, float("inf")
+        food_coords = food.asList()
+        for f in food_coords:
+            dist = mazeDistance(startPosition, f, gameState)
+            if dist < min_dist:
+                min_food, min_dist = f, dist
+        return search.breadthFirstSearch(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -598,9 +607,8 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         complete the problem definition.
         """
         x,y = state
-
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        food_grid = self.food.asList()
+        return (x, y) in food_grid
 
 def mazeDistance(point1, point2, gameState):
     """
