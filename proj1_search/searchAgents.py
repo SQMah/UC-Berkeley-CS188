@@ -10,8 +10,6 @@
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
-
-
 """
 This file contains all of the agents that can be selected to control Pacman.  To
 select an agent, use the '-p' option when running pacman.py.  Arguments can be
@@ -478,67 +476,10 @@ def foodHeuristic(state, problem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    food_coords = foodGrid.asList()
-    """
-    This is a brute force method, checks through all permutations,
-    Hugh gets tired real quick without memoization.
-    """
-    print(position, food_coords)
-    if not food_coords:
+    to_visit = foodGrid.asList()
+    if not to_visit:
         return 0
-    min_dist = float("inf")
-    memo = problem.heuristicInfo
-    def order_helper(order, start, end, curr_coord, so_far):
-        if so_far > min_dist:
-            return None
-        if start == end:
-            return so_far
-        else:
-            food_to_eat = order[start:end]
-            if (curr_coord, food_to_eat) in memo:
-                return memo[(curr_coord, food_to_eat)]
-            else:
-                next_food = order[start]
-                next_dist = order_helper(order, start + 1, end, next_food, so_far + util.manhattanDistance(curr_coord, next_food))
-                memo[(curr_coord, food_to_eat)] = next_dist
-                return memo[(curr_coord, food_to_eat)]
-    import itertools
-    for order in itertools.permutations(food_coords):
-        dist = order_helper(order, 0, len(order), position, 0)
-        if dist is not None and dist < min_dist:
-            min_dist = dist
-    """
-    # WIP of new method that looks at the SEARCH DEPTH closest pieces of food for every piece of food it goes to.
-    search_depth = 2
-
-    food_priority = util.PriorityQueueWithFunction(lambda x: util.manhattanDistance(position, x))
-    for coord in food_coords:
-        food_priority.push(coord)
-    min_dist = float("inf")
-    def search_helper(food_coords, depth, curr_pos):
-        food_coords = food_coords.copy()
-        food_priority = util.PriorityQueueWithFunction(lambda x: util.manhattanDistance(position, x))
-    while not food_priority.isEmpty():
-        starting_food = food_priority.pop()
-        curr_pos = position
-        to_eat = set(food_coords)
-        to_eat.remove(starting_food)
-        dist = util.manhattanDistance(curr_pos, starting_food)
-        curr_pos = starting_food
-        while to_eat:
-            if dist > min_dist:
-                break
-            next_food = min(to_eat, key=lambda x: util.manhattanDistance(curr_pos, x))
-            dist += util.manhattanDistance(curr_pos, next_food)
-            curr_pos = next_food
-            to_eat.remove(next_food)
-        if dist < min_dist:
-            min_dist = dist
-        search_depth -= 1
-    if min_dist != float("inf"):
-        return min_dist
-    """
-    return min_dist
+    return max([mazeDistance(position, coord, problem.startingGameState) for coord in to_visit])
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
