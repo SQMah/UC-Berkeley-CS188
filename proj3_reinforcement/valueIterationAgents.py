@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -18,7 +18,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -60,9 +60,12 @@ class ValueIterationAgent(ValueEstimationAgent):
         self.runValueIteration()
 
     def runValueIteration(self):
-        # Write value iteration code here
-        "*** YOUR CODE HERE ***"
-
+        for _ in range(self.iterations):
+            new_vals = self.values.copy()
+            for state in self.mdp.getStates():
+                if not self.mdp.isTerminal(state):
+                    new_vals[state] = max([self.getQValue(state, a) for a in self.mdp.getPossibleActions(state)])
+            self.values = new_vals
 
     def getValue(self, state):
         """
@@ -76,8 +79,13 @@ class ValueIterationAgent(ValueEstimationAgent):
           Compute the Q-value of action in state from the
           value function stored in self.values.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        transitions = self.mdp.getTransitionStatesAndProbs(state, action)
+        q_value = 0
+        for t in transitions:
+            next_state, probability = t
+            reward = self.mdp.getReward(state, action, next_state)
+            q_value += probability * (reward + self.discount * self.getValue(next_state))
+        return q_value
 
     def computeActionFromValues(self, state):
         """
@@ -88,8 +96,15 @@ class ValueIterationAgent(ValueEstimationAgent):
           there are no legal actions, which is the case at the
           terminal state, you should return None.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        if self.mdp.isTerminal(state):
+            return None
+        best_action, best_val = None, float("-inf")
+        for action in self.mdp.getPossibleActions(state):
+            q_val = self.getQValue(state, action)
+            if q_val > best_val:
+                best_action, best_val = action, q_val
+        return best_action
+
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
@@ -129,7 +144,14 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
         ValueIterationAgent.__init__(self, mdp, discount, iterations)
 
     def runValueIteration(self):
-        "*** YOUR CODE HERE ***"
+        iterations_left = self.iterations
+        while iterations_left > 0:
+            for state in self.mdp.getStates():
+                if iterations_left <= 0:
+                    return
+                if not self.mdp.isTerminal(state):
+                    self.values[state] = max([self.getQValue(state, a) for a in self.mdp.getPossibleActions(state)])
+                iterations_left -= 1
 
 class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
     """
@@ -146,8 +168,38 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
           and then act according to the resulting policy.
         """
         self.theta = theta
+        # Let a predecessor be a dict mapping some state to a set of states that can reach it with a non-zero probability
+        self.preds = {}
+        for state in mdp.getStates():
+            for action in mdp.getPossibleActions(state):
+                for t in mdp.getTransitionStatesAndProbs(state, action):
+                    next_state, probability = t
+                    if probability > 0:
+                        if next_state not in self.preds:
+                            self.preds[next_state] = set()
+                        self.preds[next_state].add(state)
         ValueIterationAgent.__init__(self, mdp, discount, iterations)
 
-    def runValueIteration(self):
-        "*** YOUR CODE HERE ***"
 
+
+    def runValueIteration(self):
+        q = util.PriorityQueue()
+        for state in self.mdp.getStates():
+            if not self.mdp.isTerminal(state):
+                max_q = max([self.getQValue(state, a) for a in self.mdp.getPossibleActions(state)])
+                diff = abs(self.getValue(state) - max_q)
+                q.push(state, -diff)
+
+        # Notice that a terminal state is never pushed onto the queue
+        # This means we don't ever have to handle terminal states here.
+        for _ in range(self.iterations):
+            if q.isEmpty():
+                return
+            state = q.pop()
+            self.values[state] = max([self.getQValue(state, a) for a in self.mdp.getPossibleActions(state)])
+            if state in self.preds:
+                for pred in self.preds[state]:
+                    max_q = max([self.getQValue(pred, a) for a in self.mdp.getPossibleActions(pred)])
+                    diff = abs(self.getValue(pred) - max_q)
+                    if diff > self.theta:
+                        q.update(pred, -diff)
