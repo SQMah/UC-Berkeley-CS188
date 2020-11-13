@@ -425,9 +425,9 @@ class JointParticleFilter(ParticleFilter):
         "*** YOUR CODE HERE ***"
         combination = list(itertools.product(self.legalPositions, repeat=self.numGhosts))
         random.shuffle(combination)
-        for i in range(self.numParticles):
-            for p in combination:
-                self.particles.append(p)
+        for p in combination:
+            self.particles.append(p)
+
 
     def addGhostAgent(self, agent):
         """
