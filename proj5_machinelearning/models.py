@@ -26,7 +26,7 @@ class PerceptronModel(object):
             x: a node with shape (1 x dimensions)
         Returns: a node containing a single number (the score)
         """
-        "*** YOUR CODE HERE ***"
+        return nn.DotProduct(self.w, x)
 
     def get_prediction(self, x):
         """
@@ -34,13 +34,75 @@ class PerceptronModel(object):
 
         Returns: 1 or -1
         """
-        "*** YOUR CODE HERE ***"
+        return 1 if nn.as_scalar(self.run(x)) >= 0 else -1
 
     def train(self, dataset):
         """
         Train the perceptron until convergence.
         """
-        "*** YOUR CODE HERE ***"
+        has_incorrect = True
+        while has_incorrect:
+            has_incorrect = False
+            for x, y in dataset.iterate_once(1):
+                run = self.run(x)
+                pred = self.get_prediction(x)
+                scalar_y = nn.as_scalar(y)
+                if scalar_y != pred:
+                    has_incorrect = True
+                    self.w.update(x, scalar_y)
+
+class DenseLayer:
+    """
+    A generic densely connected layer.
+    units: int
+        number of neurons
+    prev_units: int
+        number of neurons of the previous layer.
+    dimensions: tuple
+        the shape of the weights in this dense layer.
+    activation: function
+        for each neuron, applies the activation function on the neuron, if None, it is the identity function
+    bias: bool
+        whether or not this dense layer adds a common bias weight to every neuron
+    """
+    def __init__(self, units, prev_units, dimensions=(1,1), activation=nn.ReLU, bias=True):
+        self.params = [nn.Parameter(*dimensions) for _ in range(prev_units*units)]
+        self.bias = bias
+        self.prev_units = prev_units
+        self.units = units
+        if self.bias:
+            self.bias_w = nn.Parameter(*dimensions)
+        self.activation = activation
+        if activation is None:
+            self.activation = lambda x: x
+
+    def get_result(self, other):
+        """
+        Other is a list of results
+        Returns a list of results that are len(units).
+        """
+        results = []
+        for i in range(self.units):
+            so_far = None
+            for j, o in enumerate(other):
+                if so_far is None:
+                    so_far = nn.Linear(o, self.params[i*self.prev_units + j])
+                else:
+                    so_far = nn.Add(nn.Linear(o, self.params[i*self.prev_units + j]), so_far)
+            if self.bias:
+                so_far = nn.AddBias(so_far, self.bias_w)
+            results.append(self.activation(so_far))
+        return results
+
+    def get_params(self):
+        if self.bias:
+            return self.params + [self.bias_w]
+        else:
+            return self.params
+
+    def __repr__(self):
+        return f"DenseLayer with {self.units} neuron(s)"
+
 
 class RegressionModel(object):
     """
@@ -50,7 +112,19 @@ class RegressionModel(object):
     """
     def __init__(self):
         # Initialize your model parameters here
-        "*** YOUR CODE HERE ***"
+        self.lr = 0.001
+        self.batch_size = 1
+        self.num_layers = 3
+        self.neurons = 5
+        # Initial input layer
+        self.layers = [DenseLayer(units=self.neurons, prev_units=1, dimensions=(1,1), activation=nn.ReLU, bias=True)]
+        self.layers.extend([DenseLayer(units=self.neurons, prev_units=self.neurons, dimensions=(1,1), activation=nn.ReLU, bias=True) for _ in range(1, self.num_layers - 1)])
+        # Add final output layer
+        self.layers.append(DenseLayer(units=1, prev_units=self.neurons, dimensions=(1,1), activation=None, bias=False))
+        print("LAYERS:", self.layers)
+        self.params = []
+        for layer in self.layers:
+            self.params.extend(layer.get_params())
 
     def run(self, x):
         """
@@ -61,7 +135,10 @@ class RegressionModel(object):
         Returns:
             A node with shape (batch_size x 1) containing predicted y-values
         """
-        "*** YOUR CODE HERE ***"
+        prev_layer_result = self.layers[0].get_result([x])
+        for i in range(1, len(self.layers)):
+            prev_layer_result = self.layers[i].get_result(prev_layer_result)
+        return prev_layer_result[0]
 
     def get_loss(self, x, y):
         """
@@ -70,16 +147,50 @@ class RegressionModel(object):
         Inputs:
             x: a node with shape (batch_size x 1)
             y: a node with shape (batch_size x 1), containing the true y-values
-                to be used for training
+                to be used for trainings
         Returns: a loss node
         """
-        "*** YOUR CODE HERE ***"
+        return nn.SquareLoss(self.run(x), y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
-        "*** YOUR CODE HERE ***"
+        losses = [1.0]
+        i = 1
+        while not sum(losses) / len(losses) <= 0.02:
+            print(f"Train step {i}")
+            losses = []
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                gradients = nn.gradients(loss, self.params)
+                for j, param in enumerate(self.params):
+                    param.update(gradients[j], -self.lr)
+            # Validate
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                losses.append(nn.as_scalar(loss))
+            i += 1
+
+"""
+                 !#########       #
+               !########!          ##!
+            !########!               ###
+         !##########                  ####
+       ######### #####                ######
+        !###!      !####!              ######
+          !           #####            ######!
+                        !####!         #######
+                           #####       #######
+                             !####!   #######!
+                                ####!########
+             ##                   ##########
+           ,######!          !#############
+         ,#### ########################!####!
+       ,####'     ##################!'    #####
+     ,####'            #######              !####!
+    ####'
+"""
 
 class DigitClassificationModel(object):
     """
