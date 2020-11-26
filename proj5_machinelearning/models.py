@@ -159,7 +159,7 @@ class RegressionModel(object):
         losses = [1.0]
         i = 1
         while not sum(losses) / len(losses) <= 0.02:
-            print(f"Train step {i}")
+            print(f"Epoch {i}")
             losses = []
             for x, y in dataset.iterate_once(self.batch_size):
                 loss = self.get_loss(x, y)
