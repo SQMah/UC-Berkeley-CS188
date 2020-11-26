@@ -112,9 +112,9 @@ class RegressionModel(object):
     """
     def __init__(self):
         # Initialize your model parameters here
-        self.lr = 0.001
+        self.lr = 0.0005
         self.batch_size = 1
-        self.num_layers = 3
+        self.num_layers = 4
         self.neurons = 5
         # Initial input layer
         self.layers = [DenseLayer(units=self.neurons, prev_units=1, dimensions=(1,1), activation=nn.ReLU, bias=True)]
