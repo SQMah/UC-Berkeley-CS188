@@ -206,9 +206,19 @@ class DigitClassificationModel(object):
     methods here. We recommend that you implement the RegressionModel before
     working on this part of the project.)
     """
+
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.lr = 0.008
+        self.batch_size = 50
+        self.hidden_size = 200
+        self.w0 = nn.Parameter(784, self.hidden_size)
+        self.w1 = nn.Parameter(self.hidden_size, 10)
+        self.b0 = nn.Parameter(1, self.hidden_size)
+        self.b1 = nn.Parameter(1, 10)
+        # self.w2 = nn.Parameter(self.hidden_size, 10)
+        # self.b2 = nn.Parameter(1, 10)
 
     def run(self, x):
         """
@@ -225,6 +235,10 @@ class DigitClassificationModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        r1 = nn.ReLU(nn.AddBias(nn.Linear(x, self.w0), self.b0))
+        return nn.AddBias(nn.Linear(r1, self.w1), self.b1)
+        # r2 = nn.ReLU(nn.AddBias(nn.Linear(r1, self.w1), self.b1))
+        # return nn.AddBias(nn.Linear(r2, self.w2), self.b2)
 
     def get_loss(self, x, y):
         """
@@ -240,12 +254,27 @@ class DigitClassificationModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        return nn.SoftmaxLoss(self.run(x), y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        accuracy = 0
+        while accuracy < 0.975:
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                # gradients = nn.gradients(loss, [self.w0, self.w1, self.w2, self.b0, self.b1, self.b2])
+                gradients = nn.gradients(loss, [self.w0, self.w1, self.b0, self.b1])
+                self.w0.update(gradients[0], -self.lr)
+                self.w1.update(gradients[1], -self.lr)
+                # self.w2.update(gradients[2], -self.lr)
+                self.b0.update(gradients[2], -self.lr)
+                self.b1.update(gradients[3], -self.lr)
+                # self.b2.update(gradients[5], -self.lr)
+
+            accuracy = dataset.get_validation_accuracy()
 
 class LanguageIDModel(object):
     """
@@ -265,6 +294,16 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.lr = 0.08
+        self.batch_size = 65
+        self.hidden_size = 300
+        self.w0 = nn.Parameter(self.num_chars, self.hidden_size)
+        self.b0 = nn.Parameter(1, self.hidden_size)
+        self.w1 = nn.Parameter(self.hidden_size, self.hidden_size)
+        self.b1 = nn.Parameter(1, self.hidden_size)
+        self.w2 = nn.Parameter(self.hidden_size, 5)
+        # self.b2 = nn.Parameter(1, 5)
+
 
     def run(self, xs):
         """
@@ -296,6 +335,14 @@ class LanguageIDModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        z = nn.Linear(xs[0], self.w0)
+        h = nn.AddBias(nn.Linear(nn.ReLU(nn.AddBias(z, self.b0)), self.w1), self.b1)
+        for i in range(1, len(xs)):
+            z = nn.Add(nn.Linear(xs[i], self.w0), nn.Linear(h, self.w1))
+            h = nn.AddBias(nn.ReLU(z), self.b0)
+            i += 1
+        return nn.Linear(h, self.w2)
+
 
     def get_loss(self, xs, y):
         """
@@ -312,9 +359,24 @@ class LanguageIDModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        return nn.SoftmaxLoss(self.run(xs), y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        accuracy = 0
+        while accuracy < 0.815:
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                # gradients = nn.gradients(loss, [self.w0, self.w1, self.w2, self.b0, self.b1, self.b2])
+                gradients = nn.gradients(loss, [self.w0, self.w1, self.b0, self.b1])
+                self.w0.update(gradients[0], -self.lr)
+                self.w1.update(gradients[1], -self.lr)
+                # self.w2.update(gradients[2], -self.lr)
+                self.b0.update(gradients[2], -self.lr)
+                self.b1.update(gradients[3], -self.lr)
+                # self.b2.update(gradients[5], -self.lr)
+
+            accuracy = dataset.get_validation_accuracy()
