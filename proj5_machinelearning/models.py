@@ -44,7 +44,7 @@ class PerceptronModel(object):
         while has_incorrect:
             has_incorrect = False
             for x, y in dataset.iterate_once(1):
-                run = self.run(x)
+                # run = self.run(x)
                 pred = self.get_prediction(x)
                 scalar_y = nn.as_scalar(y)
                 if scalar_y != pred:
@@ -110,35 +110,48 @@ class RegressionModel(object):
     numbers to real numbers. The network should be sufficiently large to be able
     to approximate sin(x) on the interval [-2pi, 2pi] to reasonable precision.
     """
+    # def __init__(self):
+    #     # Initialize your model parameters here
+    #     self.lr = 0.0005
+    #     self.batch_size = 1
+    #     self.num_layers = 4
+    #     self.neurons = 5
+    #     # Initial input layer
+    #     self.layers = [DenseLayer(units=self.neurons, prev_units=1, dimensions=(1,1), activation=nn.ReLU, bias=True)]
+    #     self.layers.extend([DenseLayer(units=self.neurons, prev_units=self.neurons, dimensions=(1,1), activation=nn.ReLU, bias=True) for _ in range(1, self.num_layers - 1)])
+    #     # Add final output layer
+    #     self.layers.append(DenseLayer(units=1, prev_units=self.neurons, dimensions=(1,1), activation=None, bias=False))
+    #     print("LAYERS:", self.layers)
+    #     self.params = []
+    #     for layer in self.layers:
+    #         self.params.extend(layer.get_params())
+
     def __init__(self):
-        # Initialize your model parameters here
-        self.lr = 0.0005
+        self.lr = 0.008
         self.batch_size = 1
-        self.num_layers = 4
-        self.neurons = 5
-        # Initial input layer
-        self.layers = [DenseLayer(units=self.neurons, prev_units=1, dimensions=(1,1), activation=nn.ReLU, bias=True)]
-        self.layers.extend([DenseLayer(units=self.neurons, prev_units=self.neurons, dimensions=(1,1), activation=nn.ReLU, bias=True) for _ in range(1, self.num_layers - 1)])
-        # Add final output layer
-        self.layers.append(DenseLayer(units=1, prev_units=self.neurons, dimensions=(1,1), activation=None, bias=False))
-        print("LAYERS:", self.layers)
-        self.params = []
-        for layer in self.layers:
-            self.params.extend(layer.get_params())
+        self.hidden_size = 100
+        self.w0 = nn.Parameter(1, self.hidden_size)
+        self.w1 = nn.Parameter(self.hidden_size, 1)
+        self.b0 = nn.Parameter(1, self.hidden_size)
+        self.b1 = nn.Parameter(1, 1)
+
+    # def run(self, x):
+    #     """
+    #     Runs the model for a batch of examples.
+    #
+    #     Inputs:
+    #         x: a node with shape (batch_size x 1)
+    #     Returns:
+    #         A node with shape (batch_size x 1) containing predicted y-values
+    #     """
+    #     prev_layer_result = self.layers[0].get_result([x])
+    #     for i in range(1, len(self.layers)):
+    #         prev_layer_result = self.layers[i].get_result(prev_layer_result)
+    #     return prev_layer_result[0]
 
     def run(self, x):
-        """
-        Runs the model for a batch of examples.
-
-        Inputs:
-            x: a node with shape (batch_size x 1)
-        Returns:
-            A node with shape (batch_size x 1) containing predicted y-values
-        """
-        prev_layer_result = self.layers[0].get_result([x])
-        for i in range(1, len(self.layers)):
-            prev_layer_result = self.layers[i].get_result(prev_layer_result)
-        return prev_layer_result[0]
+        r1 = nn.ReLU(nn.AddBias(nn.Linear(x, self.w0), self.b0))
+        return nn.AddBias(nn.Linear(r1, self.w1), self.b1)
 
     def get_loss(self, x, y):
         """
@@ -152,25 +165,43 @@ class RegressionModel(object):
         """
         return nn.SquareLoss(self.run(x), y)
 
+    # def train(self, dataset):
+    #     """
+    #     Trains the model.
+    #     """
+    #     losses = [1.0]
+    #     i = 1
+    #     while not sum(losses) / len(losses) <= 0.02:
+    #         print(f"Epoch {i}")
+    #         losses = []
+    #         for x, y in dataset.iterate_once(self.batch_size):
+    #             loss = self.get_loss(x, y)
+    #             gradients = nn.gradients(loss, self.params)
+    #             for j, param in enumerate(self.params):
+    #                 param.update(gradients[j], -self.lr)
+    #         # Validate
+    #         for x, y in dataset.iterate_once(self.batch_size):
+    #             loss = self.get_loss(x, y)
+    #             losses.append(nn.as_scalar(loss))
+    #         i += 1
+
     def train(self, dataset):
         """
         Trains the model.
         """
-        losses = [1.0]
-        i = 1
-        while not sum(losses) / len(losses) <= 0.02:
-            print(f"Epoch {i}")
-            losses = []
+        "*** YOUR CODE HERE ***"
+        loss = 1
+        while loss > 0.02:
             for x, y in dataset.iterate_once(self.batch_size):
                 loss = self.get_loss(x, y)
-                gradients = nn.gradients(loss, self.params)
-                for j, param in enumerate(self.params):
-                    param.update(gradients[j], -self.lr)
-            # Validate
-            for x, y in dataset.iterate_once(self.batch_size):
-                loss = self.get_loss(x, y)
-                losses.append(nn.as_scalar(loss))
-            i += 1
+                gradients = nn.gradients(loss, [self.w0, self.w1, self.b0, self.b1])
+                self.w0.update(gradients[0], -self.lr)
+                self.w1.update(gradients[1], -self.lr)
+                self.b0.update(gradients[2], -self.lr)
+                self.b1.update(gradients[3], -self.lr)
+
+            loss = nn.as_scalar(self.get_loss(nn.Constant(dataset.x), nn.Constant(dataset.y)))
+
 
 """
                  !#########       #
@@ -367,7 +398,7 @@ class LanguageIDModel(object):
         """
         "*** YOUR CODE HERE ***"
         accuracy = 0
-        while accuracy < 0.815:
+        while accuracy < 0.85:
             for x, y in dataset.iterate_once(self.batch_size):
                 loss = self.get_loss(x, y)
                 # gradients = nn.gradients(loss, [self.w0, self.w1, self.w2, self.b0, self.b1, self.b2])
